@@ -30,10 +30,21 @@
             margin-bottom: 24px;
             text-align: center;
         }
-        .date {
-            font-size: 0.9rem;
-            color: var(--text-sub);
-            margin-bottom: 4px;
+        .controls {
+            margin-bottom: 12px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 8px;
+        }
+        .date-picker {
+            padding: 6px 10px;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            font-size: 0.95rem;
+            background-color: #fff;
+            color: var(--text-main);
+            cursor: pointer;
         }
         .category-badge {
             display: inline-block;
@@ -57,16 +68,12 @@
             padding: 24px;
             margin-bottom: 20px;
         }
-        /* セクション共通見出し */
         .section-title {
             font-size: 1.2rem;
             font-weight: 700;
             color: var(--primary-color);
             margin-top: 0;
             margin-bottom: 12px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
             border-bottom: 2px solid var(--border-color);
             padding-bottom: 8px;
         }
@@ -75,7 +82,6 @@
             font-size: 1.05rem;
             white-space: pre-wrap;
         }
-        /* キーワードセクション */
         .keywords-title {
             font-size: 0.95rem;
             font-weight: 600;
@@ -97,7 +103,6 @@
         .chip strong {
             color: var(--primary-color);
         }
-        /* タグリスト */
         .tags-footer {
             display: flex;
             gap: 6px;
@@ -124,11 +129,16 @@
 <body>
 
     <div class="container">
-        <div id="loading" class="loading">今日の学習データを読み込んでいます...</div>
+        <!-- 日付選択コントロール -->
+        <div class="controls">
+            <label for="dateSelect" style="font-size: 0.9rem; font-weight: 600; color: var(--text-sub);">📅 過去ログ選択:</label>
+            <input type="date" id="dateSelect" class="date-picker" onchange="onDateChanged()">
+        </div>
+
+        <div id="loading" class="loading">学習データを読み込んでいます...</div>
         
         <div id="content" style="display: none;">
             <header>
-                <div class="date" id="date-text">2026-11-01</div>
                 <span class="category-badge" id="category-text">カテゴリ</span>
                 <h1 id="title-text">テーマ名</h1>
             </header>
@@ -136,9 +146,7 @@
             <!-- キーワードセクション -->
             <div class="card">
                 <div class="keywords-title">🔑 重要キーワード</div>
-                <div class="keyword-chips" id="keywords-container">
-                    <!-- 動的生成 -->
-                </div>
+                <div class="keyword-chips" id="keywords-container"></div>
             </div>
 
             <!-- 📌 概要セクション -->
@@ -158,19 +166,38 @@
                 <h2 class="section-title">🚀 発展</h2>
                 <div id="text-expansion" class="section-body"></div>
 
-                <div class="tags-footer" id="tags-container">
-                    <!-- タグ -->
-                </div>
+                <div class="tags-footer" id="tags-container"></div>
             </div>
         </div>
     </div>
 
     <script>
-        const GAS_API_URL = "https://script.google.com/macros/s/AKfycbxQSxG6lQkAMraDsfdvs1P72VzsMCNe5zT0-yllGO5dTfW9MBT8Trwbz7iphqxV5KZu/exec";
+        // ★ご指定の新しいGASのWebアプリURLを設定しました
+        const GAS_API_URL = "https://script.google.com/macros/s/AKfycbwCynHxvLuvAcX0sDzC-xhQvD-xk1pCdZVQAwOZZZEmLPPOhSGZGOizlCtAY5xG4GS7/exec";
 
-        async function fetchKnowledgeData() {
+        // ページ読み込み時に本日の日付をピッカーに設定してデータを取得
+        window.addEventListener('DOMContentLoaded', () => {
+            const todayStr = new Date().toISOString().split('T')[0];
+            document.getElementById('dateSelect').value = todayStr;
+            fetchKnowledgeData(todayStr);
+        });
+
+        // カレンダーの日付が変更されたときの処理
+        function onDateChanged() {
+            const selectedDate = document.getElementById('dateSelect').value;
+            if (selectedDate) {
+                fetchKnowledgeData(selectedDate);
+            }
+        }
+
+        async function fetchKnowledgeData(dateStr) {
             try {
-                const response = await fetch(GAS_API_URL);
+                document.getElementById('loading').style.display = 'block';
+                document.getElementById('content').style.display = 'none';
+                document.getElementById('loading').innerText = `${dateStr} のデータを読み込んでいます...`;
+
+                const url = `${GAS_API_URL}?date=${dateStr}`;
+                const response = await fetch(url);
                 const data = await response.json();
 
                 if (data.error) {
@@ -179,7 +206,6 @@
                 }
 
                 // ヘッダー情報
-                document.getElementById('date-text').innerText = data.date || "";
                 document.getElementById('category-text').innerText = data.category || "教養";
                 document.getElementById('title-text').innerText = data.title || "本日のテーマ";
 
@@ -195,7 +221,7 @@
                     });
                 }
 
-                // 3軸テキストの流し込み（縦並び）
+                // 3軸テキストの流し込み
                 document.getElementById('text-overview').innerText = data.overview || "";
                 document.getElementById('text-deep_dive').innerText = data.deep_dive || "";
                 document.getElementById('text-expansion').innerText = data.expansion || "";
@@ -221,9 +247,6 @@
                 document.getElementById('loading').innerText = "データの取得に失敗しました。URLやデプロイ設定をご確認ください。";
             }
         }
-
-        // 読み込み実行
-        fetchKnowledgeData();
     </script>
 </body>
 </html>
