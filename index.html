@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CloseupToday</title>
+    <style>
+        :root {
+            --primary-color: #2563eb;
+            --bg-color: #f8fafc;
+            --card-bg: #ffffff;
+            --text-main: #1e293b;
+            --text-sub: #64748b;
+            --border-color: #e2e8f0;
+        }
+        body {
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+        }
+        .container {
+            width: 100%;
+            max-width: 800px;
+        }
+        header {
+            margin-bottom: 24px;
+            text-align: center;
+        }
+        .date {
+            font-size: 0.9rem;
+            color: var(--text-sub);
+            margin-bottom: 4px;
+        }
+        .category-badge {
+            display: inline-block;
+            background-color: #e0f2fe;
+            color: #0369a1;
+            padding: 4px 12px;
+            border-radius: 9999px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+        h1 {
+            font-size: 1.75rem;
+            margin: 0;
+            color: var(--text-main);
+        }
+        .card {
+            background-color: var(--card-bg);
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+            padding: 24px;
+            margin-bottom: 20px;
+        }
+        /* キーワードセクション */
+        .keywords-section {
+            margin-bottom: 20px;
+        }
+        .keywords-title {
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: var(--text-sub);
+            margin-bottom: 8px;
+        }
+        .keyword-chips {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        .chip {
+            background-color: #f1f5f9;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 6px 10px;
+            font-size: 0.85rem;
+        }
+        .chip strong {
+            color: var(--primary-color);
+        }
+        /* タブナビゲーション */
+        .tabs {
+            display: flex;
+            gap: 8px;
+            border-bottom: 2px solid var(--border-color);
+            margin-bottom: 16px;
+        }
+        .tab-btn {
+            background: none;
+            border: none;
+            padding: 10px 16px;
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--text-sub);
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            margin-bottom: -2px;
+            transition: color 0.2s, border-color 0.2s;
+        }
+        .tab-btn.active {
+            color: var(--primary-color);
+            border-bottom-color: var(--primary-color);
+        }
+        .tab-content {
+            display: none;
+            line-height: 1.7;
+            font-size: 1.05rem;
+            white-space: pre-wrap;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        /* タグリスト */
+        .tags-footer {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+            margin-top: 16px;
+            font-size: 0.85rem;
+            color: var(--text-sub);
+        }
+        .tag {
+            background: #f8fafc;
+            padding: 2px 8px;
+            border-radius: 4px;
+            border: 1px solid var(--border-color);
+        }
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: var(--text-sub);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <div id="loading" class="loading">今日の学習データを読み込んでいます...</div>
+        
+        <div id="content" style="display: none;">
+            <header>
+                <div class="date" id="date-text">2026-11-01</div>
+                <span class="category-badge" id="category-text">カテゴリ</span>
+                <h1 id="title-text">テーマ名</h1>
+            </header>
+
+            <!-- キーワードセクション -->
+            <div class="card keywords-section">
+                <div class="keywords-title">🔑 重要キーワード</div>
+                <div class="keyword-chips" id="keywords-container">
+                    <!-- 動的生成 -->
+                </div>
+            </div>
+
+            <!-- 3軸コンテンツセクション -->
+            <div class="card">
+                <div class="tabs">
+                    <button class="tab-btn active" onclick="switchTab('overview')">📌 概要</button>
+                    <button class="tab-btn" onclick="switchTab('deep_dive')">🔍 深掘り</button>
+                    <button class="tab-btn" onclick="switchTab('expansion')">🚀 発展</button>
+                </div>
+
+                <div id="tab-overview" class="tab-content active"></div>
+                <div id="tab-deep_dive" class="tab-content"></div>
+                <div id="tab-expansion" class="tab-content"></div>
+
+                <div class="tags-footer" id="tags-container">
+                    <!-- タグ -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ★ここに先ほどGASを「Webアプリ」としてデプロイした際に取得したURLを設定してください
+        const GAS_API_URL = "https://script.google.com/macros/s/AKfycbxPbAND5mBbcyn9KQtVdiPJ-J0JFSErSnzRVVEhtZ9bDWn7vctgqdDX-0Y0x_HanWtY/exec";
+
+        async function fetchKnowledgeData() {
+            try {
+                const response = await fetch(GAS_API_URL);
+                const data = await response.json();
+
+                if (data.error) {
+                    document.getElementById('loading').innerText = data.error;
+                    return;
+                }
+
+                // データの流し込み
+                document.getElementById('date-text').innerText = data.date || "";
+                document.getElementById('category-text').innerText = data.category || "教養";
+                document.getElementById('title-text').innerText = data.title || "本日のテーマ";
+
+                // キーワードの生成
+                const kwContainer = document.getElementById('keywords-container');
+                kwContainer.innerHTML = "";
+                if (data.keywords && Array.isArray(data.keywords)) {
+                    data.keywords.forEach(kw => {
+                        const chip = document.createElement('div');
+                        chip.className = 'chip';
+                        chip.innerHTML = `<strong>${kw.term}</strong>: ${kw.explanation}`;
+                        kwContainer.appendChild(chip);
+                    });
+                }
+
+                // 3軸テキストの設定
+                document.getElementById('tab-overview').innerText = data.overview || "";
+                document.getElementById('tab-deep_dive').innerText = data.deep_dive || "";
+                document.getElementById('tab-expansion').innerText = data.expansion || "";
+
+                // 関連タグの設定
+                const tagContainer = document.getElementById('tags-container');
+                tagContainer.innerHTML = "";
+                if (data.related_tags && Array.isArray(data.related_tags)) {
+                    data.related_tags.forEach(tag => {
+                        const t = document.createElement('span');
+                        t.className = 'tag';
+                        t.innerText = `#${tag}`;
+                        tagContainer.appendChild(t);
+                    });
+                }
+
+                // 表示切り替え
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('content').style.display = 'block';
+
+            } catch (e) {
+                console.error(e);
+                document.getElementById('loading').innerText = "データの取得に失敗しました。URLやデプロイ設定をご確認ください。";
+            }
+        }
+
+        // タブ切り替え関数
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+
+            event.target.classList.add('active');
+            document.getElementById(`tab-${tabName}`).classList.add('active');
+        }
+
+        // 読み込み実行
+        fetchKnowledgeData();
+    </script>
+</body>
+</html>
