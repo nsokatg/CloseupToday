@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CloseupToday</title>
+    <title>日替わりランダム学習プラットフォーム</title>
     <style>
         :root {
             --primary-color: #2563eb;
@@ -57,10 +57,25 @@
             padding: 24px;
             margin-bottom: 20px;
         }
-        /* キーワードセクション */
-        .keywords-section {
-            margin-bottom: 20px;
+        /* セクション共通見出し */
+        .section-title {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: var(--primary-color);
+            margin-top: 0;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            border-bottom: 2px solid var(--border-color);
+            padding-bottom: 8px;
         }
+        .section-body {
+            line-height: 1.7;
+            font-size: 1.05rem;
+            white-space: pre-wrap;
+        }
+        /* キーワードセクション */
         .keywords-title {
             font-size: 0.95rem;
             font-weight: 600;
@@ -82,46 +97,16 @@
         .chip strong {
             color: var(--primary-color);
         }
-        /* タブナビゲーション */
-        .tabs {
-            display: flex;
-            gap: 8px;
-            border-bottom: 2px solid var(--border-color);
-            margin-bottom: 16px;
-        }
-        .tab-btn {
-            background: none;
-            border: none;
-            padding: 10px 16px;
-            font-size: 1rem;
-            font-weight: 600;
-            color: var(--text-sub);
-            cursor: pointer;
-            border-bottom: 2px solid transparent;
-            margin-bottom: -2px;
-            transition: color 0.2s, border-color 0.2s;
-        }
-        .tab-btn.active {
-            color: var(--primary-color);
-            border-bottom-color: var(--primary-color);
-        }
-        .tab-content {
-            display: none;
-            line-height: 1.7;
-            font-size: 1.05rem;
-            white-space: pre-wrap;
-        }
-        .tab-content.active {
-            display: block;
-        }
         /* タグリスト */
         .tags-footer {
             display: flex;
             gap: 6px;
             flex-wrap: wrap;
-            margin-top: 16px;
+            margin-top: 20px;
             font-size: 0.85rem;
             color: var(--text-sub);
+            border-top: 1px solid var(--border-color);
+            padding-top: 12px;
         }
         .tag {
             background: #f8fafc;
@@ -149,24 +134,29 @@
             </header>
 
             <!-- キーワードセクション -->
-            <div class="card keywords-section">
+            <div class="card">
                 <div class="keywords-title">🔑 重要キーワード</div>
                 <div class="keyword-chips" id="keywords-container">
                     <!-- 動的生成 -->
                 </div>
             </div>
 
-            <!-- 3軸コンテンツセクション -->
+            <!-- 📌 概要セクション -->
             <div class="card">
-                <div class="tabs">
-                    <button class="tab-btn active" onclick="switchTab('overview')">📌 概要</button>
-                    <button class="tab-btn" onclick="switchTab('deep_dive')">🔍 深掘り</button>
-                    <button class="tab-btn" onclick="switchTab('expansion')">🚀 発展</button>
-                </div>
+                <h2 class="section-title">📌 概要</h2>
+                <div id="text-overview" class="section-body"></div>
+            </div>
 
-                <div id="tab-overview" class="tab-content active"></div>
-                <div id="tab-deep_dive" class="tab-content"></div>
-                <div id="tab-expansion" class="tab-content"></div>
+            <!-- 🔍 深掘りセクション -->
+            <div class="card">
+                <h2 class="section-title">🔍 深掘り</h2>
+                <div id="text-deep_dive" class="section-body"></div>
+            </div>
+
+            <!-- 🚀 発展セクション -->
+            <div class="card">
+                <h2 class="section-title">🚀 発展</h2>
+                <div id="text-expansion" class="section-body"></div>
 
                 <div class="tags-footer" id="tags-container">
                     <!-- タグ -->
@@ -176,8 +166,7 @@
     </div>
 
     <script>
-        // ★ここに先ほどGASを「Webアプリ」としてデプロイした際に取得したURLを設定してください
-        const GAS_API_URL = "https://script.google.com/macros/s/AKfycbxQSxG6lQkAMraDsfdvs1P72VzsMCNe5zT0-yllGO5dTfW9MBT8Trwbz7iphqxV5KZu/exec";
+        const GAS_API_URL = "https://script.google.com/macros/s/AKfycbyiVMs0HspjIXZhmEbphL7LpFvqoga-3ov9ZydwaLYPJ3cnnwkRg0DEX4mcQrWTzD0g/exec";
 
         async function fetchKnowledgeData() {
             try {
@@ -189,12 +178,12 @@
                     return;
                 }
 
-                // データの流し込み
+                // ヘッダー情報
                 document.getElementById('date-text').innerText = data.date || "";
                 document.getElementById('category-text').innerText = data.category || "教養";
                 document.getElementById('title-text').innerText = data.title || "本日のテーマ";
 
-                // キーワードの生成
+                // キーワード
                 const kwContainer = document.getElementById('keywords-container');
                 kwContainer.innerHTML = "";
                 if (data.keywords && Array.isArray(data.keywords)) {
@@ -206,12 +195,12 @@
                     });
                 }
 
-                // 3軸テキストの設定
-                document.getElementById('tab-overview').innerText = data.overview || "";
-                document.getElementById('tab-deep_dive').innerText = data.deep_dive || "";
-                document.getElementById('tab-expansion').innerText = data.expansion || "";
+                // 3軸テキストの流し込み（縦並び）
+                document.getElementById('text-overview').innerText = data.overview || "";
+                document.getElementById('text-deep_dive').innerText = data.deep_dive || "";
+                document.getElementById('text-expansion').innerText = data.expansion || "";
 
-                // 関連タグの設定
+                // 関連タグ
                 const tagContainer = document.getElementById('tags-container');
                 tagContainer.innerHTML = "";
                 if (data.related_tags && Array.isArray(data.related_tags)) {
@@ -231,15 +220,6 @@
                 console.error(e);
                 document.getElementById('loading').innerText = "データの取得に失敗しました。URLやデプロイ設定をご確認ください。";
             }
-        }
-
-        // タブ切り替え関数
-        function switchTab(tabName) {
-            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
-            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
-
-            event.target.classList.add('active');
-            document.getElementById(`tab-${tabName}`).classList.add('active');
         }
 
         // 読み込み実行
